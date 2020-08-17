@@ -1,0 +1,6 @@
+/Temporales
+errores.txt
+.vscode/*
+resultados.txt
+.pylintrc
+__pycache__
