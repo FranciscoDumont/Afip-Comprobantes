@@ -30,17 +30,18 @@ CARPETA_DESCARGAS = os.path.join(os.getcwd(), 'Temporales')
 
 
 class Usuario:
-    def __init__(self, nombre, apellido, cuit, clave):
+    def __init__(self, nombre, apellido, cuit, clave, es_ri):
         self.nombre = nombre
         self.apellido = apellido
         self.cuit = str(cuit)
         self.clave = clave
+        self.es_responsable_inscripto = es_ri
 
     def __repr__(self):
-        return f"<Usuario: {self.nombre} {self.apellido} CUIT: {self.cuit} Clave: {self.clave}>"
+        return f"<Usuario: {self.nombre} {self.apellido} CUIT: {self.cuit} Clave: {self.clave} RI:{self.es_responsable_inscripto}>"
 
     def __str__(self):
-        return f"<Usuario: {self.nombre} {self.apellido} CUIT: {self.cuit} Clave: {self.clave}>"
+        return f"<Usuario: {self.nombre} {self.apellido} CUIT: {self.cuit} Clave: {self.clave} RI:{self.es_responsable_inscripto}>"
 
 class Comprobantes(Enum):
     EMITIDOS = "Emitidos"
@@ -154,6 +155,10 @@ def afip_bot(driver, usuario, meses, tipo_comprobante):
         print(f"Se renombró el archivo a {archivo_csv}")
         
         # Sumo el importe total
+        if usuario.es_responsable_inscripto:
+            total = sum_csv(archivo_csv, "Imp. Neto Gravado")
+            cprint(bcolors.OKGREEN, f"Total Neto del mes {mes}, {usuario.apellido}: {total}")
+        else:
         total = sum_csv(archivo_csv, "Imp. Total")
         cprint(bcolors.OKGREEN, f"Total del mes {mes}, {usuario.apellido}: {total}")
         
@@ -178,8 +183,7 @@ def sum_csv(archivo, columna):
 
 
 def crear_rango_fechas(un_mes):
-    #anio = datetime.now().year
-    anio = 2019
+    anio = datetime.now().year
     dias = calendar.monthrange(anio, un_mes)[1]
     mes = f"{un_mes:02d}" # Leading zeroes
     fecha = f"01/{mes}/{anio} - {dias}/{mes}/{anio}"
@@ -188,11 +192,11 @@ def crear_rango_fechas(un_mes):
 
 def cargar_usuarios():
     xl = pd.read_excel(EXCEL, sheet_name="Clientes", skiprows=[0])
-    df = pd.DataFrame(xl, columns=['Nombre', 'Apellido', 'CUIT', 'Clave AFIP'])\
+    df = pd.DataFrame(xl, columns=['Nombre', 'Apellido', 'CUIT', 'Clave AFIP', 'RI'])\
         .rename(columns={'Clave AFIP': 'Clave'})
     df = df[df.Clave.notnull()] # Filtro los que no tienen la clave
     for row in df.itertuples():
-        nuevo_usuario = Usuario(row.Nombre, row.Apellido, row.CUIT, row.Clave)
+        nuevo_usuario = Usuario(row.Nombre, row.Apellido, row.CUIT, row.Clave, row.RI == 1)
         USUARIOS.append(nuevo_usuario)
 
 
